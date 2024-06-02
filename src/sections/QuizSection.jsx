@@ -249,6 +249,7 @@ function QuizSection({ currentApplicationUuid, currentMenuUuid }) {
       </div>
       <div className='overflow-y-scroll pr-4'>
         {generateQuizElement(currentQuiz ?? [])}
+        <div className='h-12'></div>
       </div>
     </div>
   )
