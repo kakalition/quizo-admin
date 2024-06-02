@@ -11,6 +11,7 @@ function App() {
   const [applicationList, setApplicationList] = useState([]);
   const [currentApplicationUuid, setCurrentApplicationUuid] = useState(null);
   const [menuList, setMenuList] = useState([]);
+  const [currentMenuUuid, setCurrentMenuUuid] = useState(null);
 
   async function fetchApplications() {
     const data = await axios({
@@ -50,10 +51,10 @@ function App() {
           />
         </div>
         <div className='w-[25%] h-screen border-r-1 border-r-gray-300 p-4'>
-          <MenuListSection menuList={menuList} fetchMenus={() => fetchMenus(currentApplicationUuid)} currentApplicationUuid={currentApplicationUuid} />
+          <MenuListSection menuList={menuList} fetchMenus={() => fetchMenus(currentApplicationUuid)} currentApplicationUuid={currentApplicationUuid} onMenuClick={(uuid) => setCurrentMenuUuid(uuid)} />
         </div>
         <div className='w-[55%] h-screen border-r-1 border-r-gray-300 p-4'>
-          <QuizSection />
+          <QuizSection currentApplicationUuid={currentApplicationUuid} currentMenuUuid={currentMenuUuid} />
         </div>
       </div>
       <Toaster />

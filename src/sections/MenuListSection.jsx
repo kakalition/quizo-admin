@@ -14,7 +14,7 @@ import { v4 as uuid } from 'uuid'
 
 let baseUrl = 'http://localhost:3000'
 
-function MenuListSection({ menuList, currentApplicationUuid, fetchMenus }) {
+function MenuListSection({ menuList, currentApplicationUuid, fetchMenus, onMenuClick }) {
   const [menuListFormData, setMenuListFormData] = useState({});
 
   const {
@@ -40,7 +40,6 @@ function MenuListSection({ menuList, currentApplicationUuid, fetchMenus }) {
     } else {
       const payload = {
         ...menuListFormData,
-        parentUuid: null,
       };
       await axios.post(`${baseUrl}/applications/${currentApplicationUuid}/menus`, payload);
     }
@@ -56,29 +55,36 @@ function MenuListSection({ menuList, currentApplicationUuid, fetchMenus }) {
   }
 
   async function onDeleteMenu(onClose) {
-    await axios.delete(`${baseUrl}/menus/${menuListFormData.uuid}`, menuListFormData);
+    await axios.delete(`${baseUrl}/applications/${currentApplicationUuid}/menus/${menuListFormData.uuid}`, menuListFormData);
 
     toast.success('Berhasil menghapus menu!')
     fetchMenus();
     onClose();
   }
 
+  function onAddChild(data) {
+    setMenuListFormData({
+      parentUuid: data.uuid
+    });
+
+    onOpenForm();
+  }
+
+
   function generateMenusElement(data) {
     const menus = [];
-    let level = 0;
 
-    function recurseData(parentUuid) {
+    function recurseData(parentUuid, level) {
       const currentLevelMenus = data.filter((e) => e.parentUuid == parentUuid);
       currentLevelMenus.sort((a, b) => a.index - b.index);
 
       currentLevelMenus.forEach(menu => {
-        menus.push((<MenuTile key={menu.uuid} title={menu.name} level={level} />));
-
-        recurseData(menu.uuid);
+        menus.push((<MenuTile key={menu.uuid} level={level} data={menu} onOpenEditModal={onOpenEditModal} onOpenDeleteModal={onOpenDeleteModal} onAddChild={onAddChild} onMenuClick={onMenuClick} totalChildren={data.filter((e) => e.parentUuid == menu.uuid).length} />));
+        recurseData(menu.uuid, level + 1);
       });
     }
 
-    recurseData(null);
+    recurseData(null, 0);
 
     return menus;
   }
@@ -97,106 +103,6 @@ function MenuListSection({ menuList, currentApplicationUuid, fetchMenus }) {
         </div>
 
         {generateMenusElement(menuList)}
-
-        {/* <div className='flex flex-row items-center'>
-          <div>
-            <Button variant='light' isIconOnly>
-              <ArrowRightIcon />
-            </Button>
-          </div>
-          <div className='mr-2'>
-            <CubeIcon />
-          </div>
-          <p className='text-sm'>Kelas 7</p>
-        </div>
-
-        <div className='flex flex-row items-center pl-3'>
-          <div>
-            <Button variant='light' isIconOnly>
-              <ArrowRightIcon />
-            </Button>
-          </div>
-          <div className='mr-2'>
-            <CubeIcon />
-          </div>
-          <p className='text-sm'>Ilmu Pengetahuan Alam</p>
-        </div>
-
-        <div className='flex flex-row items-center justify-between pl-16 my-1 py-1 bg-gray-100 rounded-md'>
-          <div className='flex flex-row items-center'>
-            <div className='mr-2'>
-              <CubeIcon />
-            </div>
-            <p className='text-sm'>Objek IPA dan Pengamatannya</p>
-          </div>
-          <div className='hover:bg-gray-100 p-1 rounded-full transition mr-1'>
-            <PlusIcon />
-          </div>
-        </div>
-
-        <div className='flex flex-row items-center justify-between pl-16 my-1 py-1'>
-          <div className='flex flex-row items-center'>
-            <div className='mr-2'>
-              <CubeIcon />
-            </div>
-            <p className='text-sm'>Klasifikasi Makhluk Hidup</p>
-          </div>
-          <div className='hover:bg-gray-100 p-1 rounded-full transition mr-1'>
-            <PlusIcon />
-          </div>
-        </div>
-
-        <div className='flex flex-row items-center justify-between pl-16 my-1 py-1'>
-          <div className='flex flex-row items-center'>
-            <div className='mr-2'>
-              <CubeIcon />
-            </div>
-            <p className='text-sm'>Monera, Protista, dan Jamur</p>
-          </div>
-          <div className='hover:bg-gray-100 p-1 rounded-full transition mr-1'>
-            <PlusIcon />
-          </div>
-        </div>
-
-        <div className='flex flex-row items-center justify-between pl-16 my-1 py-1'>
-          <div className='flex flex-row items-center'>
-            <div className='mr-2'>
-              <CubeIcon />
-            </div>
-            <p className='text-sm'>Avertebrata dan Vertebrata</p>
-          </div>
-          <div className='hover:bg-gray-100 p-1 rounded-full transition mr-1'>
-            <PlusIcon />
-          </div>
-        </div>
-
-        <div className='h-2'></div>
-
-        <div className='flex flex-row items-center'>
-          <div>
-            <Button variant='light' isIconOnly>
-              <ArrowRightIcon />
-            </Button>
-          </div>
-          <div className='mr-2'>
-            <CubeIcon />
-          </div>
-          <p className='text-sm'>Kelas 8</p>
-        </div>
-
-        <div className='h-2'></div>
-
-        <div className='flex flex-row items-center'>
-          <div>
-            <Button variant='light' isIconOnly>
-              <ArrowRightIcon />
-            </Button>
-          </div>
-          <div className='mr-2'>
-            <CubeIcon />
-          </div>
-          <p className='text-sm'>Kelas 9</p>
-        </div> */}
       </div>
 
       <Modal isOpen={isOpenForm} onOpenChange={onOpenChangeForm} size='lg'>
@@ -251,20 +157,45 @@ function MenuListSection({ menuList, currentApplicationUuid, fetchMenus }) {
   )
 }
 
-function MenuTile({ level = 0, title }) {
+function MenuTile({ level, data, onAddChild, onOpenEditModal, onOpenDeleteModal, onMenuClick, totalChildren }) {
   return (
-    <div className={`flex flex-row items-center justify-between my-1 py-1 pl-${level * 3}`}>
+    <div className={`flex flex-row items-center justify-between my-1 py-1 ${totalChildren == 0 ? 'hover:bg-gray-200 cursor-pointer' : ''} rounded-lg transition`}
+      style={{ paddingLeft: `${level * 1 + (totalChildren == 0 ? 1.5 : 0)}rem` }}
+      onClick={() => totalChildren == 0 ? onMenuClick(data.uuid) : ''}
+    >
       <div className='flex flex-row items-center'>
-        <Button variant='light' isIconOnly>
-          <ArrowRightIcon />
-        </Button>
+        {totalChildren != 0
+          ? (<div className='mr-2'><ArrowRightIcon /></div>)
+          : (<div />)
+        }
+
         <div className='mr-2'>
           <CubeIcon />
         </div>
-        <p className='text-sm'>{title}</p>
+        <p className='text-sm'>{data.name}</p>
       </div>
-      <div className='hover:bg-gray-100 p-1 rounded-full transition mr-1'>
-        <PlusIcon />
+      <div className='flex flex-row items-center mr-2'>
+        <div className='hover:bg-gray-100 p-1 rounded-full transition mr-2' onClick={() => onAddChild(data)}>
+          <PlusIcon />
+        </div>
+        <Popover placement="right" offset={10} showArrow>
+          <PopoverTrigger>
+            <div>
+              <EllipsisVerticalIcon />
+            </div>
+          </PopoverTrigger>
+          <PopoverContent>
+            <Listbox
+              aria-label="Actions"
+              className='w-32'
+            >
+              <ListboxItem key="edit" onClick={() => onOpenEditModal(data)}>Edit</ListboxItem>
+              <ListboxItem key="delete" className="text-danger" color="danger" onClick={() => onOpenDeleteModal(data)}>
+                Hapus
+              </ListboxItem>
+            </Listbox>
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   );
