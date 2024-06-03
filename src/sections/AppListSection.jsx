@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 
 import Utils from '../Utils';
 
+let baseUrl = 'http://localhost:3000'
 
 function AppListSection({ applicationList, fetchApplications, onApplicationClick, currentApplicationUuid }) {
   const [applicationFormData, setApplicationFormData] = useState({});
